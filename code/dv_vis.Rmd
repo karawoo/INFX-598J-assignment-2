@@ -184,6 +184,7 @@ dat_total <- dat %>%
 
 ggplot(dat_total, aes(x = year, y = tot_fatal_state, group = 1)) +
   geom_line() +
+  ylim(0, max(dat_total$tot_fatal_state) + 10) +
   ylab("Fatalities") +
   xlab("Year") +
   ggtitle("Total Domestic Violence Fatalities in Washington State")
