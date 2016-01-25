@@ -151,6 +151,8 @@ pop_long <- pop %>%
 dat <- merge(dv_long, pop_long, by = c("county", "year"))
 ```
 
+\newpage
+
 ## Distributions
 
 What is the distribution of fatalities by county in a given year, normalized by
@@ -176,10 +178,11 @@ What, if any, temporal trends are there in total fatalities and the three types
 of fatalities?
 
 ```{r fatalities_line}
-dat %>%
+dat_total <- dat %>%
   group_by(year) %>%
-  summarize(tot_fatal_state = sum(fatalities, na.rm = TRUE)) %>%
-  ggplot(aes(x = year, y = tot_fatal_state, group = 1)) +
+  summarize(tot_fatal_state = sum(fatalities, na.rm = TRUE))
+
+ggplot(dat_total, aes(x = year, y = tot_fatal_state, group = 1)) +
   geom_line() +
   ylab("Fatalities") +
   xlab("Year") +
@@ -196,6 +199,15 @@ dat %>%
   ylab("Fatalities") +
   xlab("Year") +
   ggtitle("Domestic Violence Fatalities in Washington State by Type")
+```
+
+\newpage 
+
+If I were planning more confirmatory statistics with this data I'd probably want
+to know about the degree of temporal autocorrelation.
+
+```{r autocorrelation_total}
+acf(dat_total$tot_fatal_state, main = "Autocorrelation function for statewide \ntotal domestic violence fatalities")
 ```
 
 \newpage
