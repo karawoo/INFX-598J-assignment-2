@@ -148,7 +148,7 @@ pop_long <- pop %>%
          year = as.numeric(year))
 ```
 
-Finally, we'll want to merge the fatality and population data
+Finally, we'll want to merge the fatality and population data.
 
 ```{r merge_data}
 dat <- merge(dv_long, pop_long, by = c("county", "year"))
@@ -156,22 +156,50 @@ dat <- merge(dv_long, pop_long, by = c("county", "year"))
 
 ## Preliminary Graphs
 
-### 2014 fatalities
+What is the distribution of fatalities by county in a given year, normalized by
+population?
 
-```{r 2014_fatalities}
-## 2014 fatalities faceted by type
+```{r fatality_hist_by_pop}
 dat %>%
-  filter(year == 2014) %>%
-  ggplot(aes(x = county, y = fatalities)) +
-  geom_bar(stat = "identity") +
-  facet_grid(type ~ .) +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-  ylab("Number of fatalities") +
-  xlab("County") +
-  ggtitle("Domestic Violence Fatalities in Washington Counties, 2014")
+  group_by(county, year) %>%
+  summarize(tot_fatal_pop = sum(fatalities, na.rm = TRUE) / (unique(pop) / 10000)) %>%
+  ggplot(aes(x = tot_fatal_pop)) +
+  geom_histogram(binwidth = 0.1) +
+  facet_wrap(~ year, ncol = 3) +
+  ylab("Count") +
+  xlab("Number of fatalities per 10,000 population") +
+  ggtitle("Domestic Violence Fatalities")
 ```
 
-### Homicide time series
+### Time series and temporal trends
+
+What, if any, temporal trends are there in total fatalities and the three types
+of fatalities?
+
+```{r fatalities_line}
+dat %>%
+  group_by(year) %>%
+  summarize(tot_fatal_state = sum(fatalities, na.rm = TRUE)) %>%
+  ggplot(aes(x = year, y = tot_fatal_state, group = 1)) +
+  geom_line() +
+  ylab("Fatalities") +
+  xlab("Year") +
+  ggtitle("Total Domestic Violence Fatalities in Washington State")
+```
+
+```{r fatalities_line_by_type, fig.width = 12, fig.height = 12}
+dat %>%
+  group_by(year, type) %>%
+  summarize(tot_fatal_state = sum(fatalities, na.rm = TRUE)) %>%
+    ggplot(aes(x = year, y = tot_fatal_state, group = 1)) +
+  geom_line() +
+  facet_wrap(~ type, ncol = 1) +
+  ylab("Fatalities") +
+  xlab("Year") +
+  ggtitle("Domestic Violence Fatalities in Washington State by Type")
+```
+
+Can we see any trends in homicides by county?
 
 ```{r homicide_line_color}
 ## Line graph of homicides
@@ -180,6 +208,8 @@ dat %>%
   ggplot(aes(x = year, y = fatalities, group = county, color = county)) +
   geom_line()
 ```
+
+Okay not that way...how about faceting?
 
 ```{r homicide_line_facet}
 ## Faceted by county
