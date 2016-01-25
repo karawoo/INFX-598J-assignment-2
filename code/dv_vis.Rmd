@@ -158,7 +158,7 @@ dat <- merge(dv_long, pop_long, by = c("county", "year"))
 What is the distribution of fatalities by county in a given year, normalized by
 population?
 
-```{r fatality_hist_by_pop, fig.width = 6, fig.height = 6}
+```{r fatality_hist_by_pop, fig.width = 6, fig.height = 8}
 dat %>%
   group_by(county, year) %>%
   summarize(tot_fatal_pop = sum(fatalities, na.rm = TRUE) / (unique(pop) / 10000)) %>%
