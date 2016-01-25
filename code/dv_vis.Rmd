@@ -1,8 +1,8 @@
 # Washington State Domestic Violence Fatalities
 
 ```{r global_options, include=FALSE}
-knitr::opts_chunk$set(fig.width = 12, fig.height = 8, fig.path = "../figs/",
-                      warning = FALSE, message = FALSE)
+knitr::opts_chunk$set(fig.width = 9, fig.height = 7, fig.path = "../figs/",
+                      warning = FALSE, message = FALSE, echo = FALSE)
 ```
 
 I am interested in understanding trends in domestic violence fatalities in
@@ -24,7 +24,13 @@ data through 2014 as the second half of 2015 is not yet available). I used
 [Tabula](http://tabula.technology/) to convert the
 [data PDF](http://dvfatalityreview.org/2015/12/30/updated-through-6302015-washington-state-domestic-violence-fatalities-by-county/)
 into a CSV. The resulting CSV is still quite messy and required some significant
-data cleaning.
+data cleaning. The Office of Financial Management publishes yearly county-level
+population estimates which are probably good enough for these purposes.
+
+All of the cleaning and plotting of the data (with the exception of running the
+data PDF through Tabula to get a CSV) was done in R. To reduce clutter and focus
+on the visualizations I've hidden the code chunks, but they can be viewed in
+[the .Rmd file](https://github.com/karawoo/INFX-598J-assignment-2/blob/master/code/dv_vis.Rmd).
 
 ```{r dv_data}
 ## First load the required packages
@@ -85,9 +91,6 @@ names(dv) <- newnames
 dv <- dv[-c(1, nrow(dv)), -c(ncol(dv), ncol(dv) - 1, ncol(dv) - 2)]
 ```
 
-It would be helpful to have the data in a long format, so we'll reshape it and
-do a little final tidying.
-
 ```{r dv_reshape}
 dv_long <- dv %>%
   ## Gather into long format
@@ -99,10 +102,6 @@ dv_long <- dv %>%
   ## Convert fatalities to numeric
   mutate(fatalities = as.numeric(fatalities))
 ```
-  
-It will be useful to have county-level population data. The Office of Financial
-Management publishes yearly postcensal population estimates that will be good
-enough for our purposes. It too requires some cleaning.
 
 ```{r pop_data}
 ## Download OFM data
@@ -148,18 +147,16 @@ pop_long <- pop %>%
          year = as.numeric(year))
 ```
 
-Finally, we'll want to merge the fatality and population data.
-
 ```{r merge_data}
 dat <- merge(dv_long, pop_long, by = c("county", "year"))
 ```
 
-## Preliminary Graphs
+## Distributions
 
 What is the distribution of fatalities by county in a given year, normalized by
 population?
 
-```{r fatality_hist_by_pop}
+```{r fatality_hist_by_pop, fig.width = 6, fig.height = 6}
 dat %>%
   group_by(county, year) %>%
   summarize(tot_fatal_pop = sum(fatalities, na.rm = TRUE) / (unique(pop) / 10000)) %>%
@@ -171,7 +168,9 @@ dat %>%
   ggtitle("Domestic Violence Fatalities")
 ```
 
-### Time series and temporal trends
+\newpage
+
+## Time series and temporal trends
 
 What, if any, temporal trends are there in total fatalities and the three types
 of fatalities?
@@ -187,7 +186,7 @@ dat %>%
   ggtitle("Total Domestic Violence Fatalities in Washington State")
 ```
 
-```{r fatalities_line_by_type, fig.width = 12, fig.height = 12}
+```{r fatalities_line_by_type}
 dat %>%
   group_by(year, type) %>%
   summarize(tot_fatal_state = sum(fatalities, na.rm = TRUE)) %>%
@@ -198,6 +197,8 @@ dat %>%
   xlab("Year") +
   ggtitle("Domestic Violence Fatalities in Washington State by Type")
 ```
+
+\newpage
 
 Can we see any trends in homicides by county?
 
@@ -225,12 +226,15 @@ dat %>%
 
 ```
 
-### Maps of fatalities by county
+\newpage
 
-To visualize homicides on a map, we first need to acquire county boundary data
-from `ggplot2`'s `map_data()` function and merge it with our homicide data.
+## Maps of fatalities by county
 
-```{r homicide_map_data}
+```{r homicide_map_data} 
+## To visualize homicides on a map, we first need to acquire county boundary
+## data from `ggplot2`'s `map_data()` function and merge it with our homicide
+## data.
+
 ## Gather county spatial data
 county_map <- ggplot2::map_data("county") %>%
   filter(region == "washington") %>%
@@ -249,10 +253,7 @@ hom_county <- dat %>%
 
 ```
 
-Then we'll map the number of domestic violence homicides by county using colors
-from the `viridis` package.
-
-```{r homicide_map_total, fig.height = 15}
+```{r homicide_map_total, fig.height = 8.5}
 ## Map of number of homicides in each county by year
 ggplot(hom_county, aes(x = long, y = lat, group = group)) +
   facet_wrap(~ year, ncol = 3) +
@@ -274,7 +275,7 @@ ggplot(hom_county, aes(x = long, y = lat, group = group)) +
 Predictably, this basically looks like a population map of Washington. So
 instead let's look at the number of homicides per 10,000 people.
 
-```{r homicide_map_by_pop, fig.height = 15}
+```{r homicide_map_by_pop, fig.height = 8.5}
 ## Map of number of homicides/population by year
 ggplot(hom_county, aes(x = long, y = lat, group = group)) +
   facet_wrap(~ year, ncol = 3) +
