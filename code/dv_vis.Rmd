@@ -6,7 +6,9 @@ knitr::opts_chunk$set(fig.width = 10, fig.height = 7, fig.path = "../figs/",
 ```
 
 I am interested in understanding trends in domestic violence fatalities in
-Washington state, specifically:
+Washington state. Are there spatial and temporal trends in domestic violence
+fatalities? To address this question, I have created visualizations to answer a
+few narrower questions:
 
 * Have rates of domestic violence homicides, suicides, and fatal police
   interventions changed over time?
@@ -14,34 +16,68 @@ Washington state, specifically:
   suicides (particularly after normalizing for population)?
 
 
-To address these questions I am using data from the Washington State Coalition
-Against Domestic Violence's
-[Domestic Violence Fatality Review](http://dvfatalityreview.org/) and population
-data from the Office of Financial Management. The Domestic Violence Fatality
-Review provides county-level data on domestic violence homicides, suicides, and
-fatal police interventions from 1997 through 2015 (though I will only be using
-data through 2014 as the second half of 2015 is not yet available). I used
+I am using data from the Washington State Coalition Against Domestic Violence's
+[Domestic Violence Fatality Review](http://dvfatalityreview.org/) and
+[population data](http://www.ofm.wa.gov/pop/april1/hseries/default.asp) from the
+Office of Financial Management. The Domestic Violence Fatality Review provides
+county-level data on domestic violence homicides, suicides, and fatal police
+interventions from 1997 through 2015 (though I will only be using data through
+2014 as the second half of 2015 is not yet available). Homicides, suicides, and
+police intervention fatalities are defined thus:
+
+> Homicide: Any homicide of one intimate partner by another, and other homicide
+> deaths that happen in the context of intimate partner violence. These may
+> include: domestic violence victims killed by abusive partners; children,
+> friends and family members of domestic violence victims killed by abusers; law
+> enforcement officers killed by abusers; abusers killed by domestic violence
+> victims; abusers killed by friends, family, or bystanders intervening on
+> behalf of a victim.
+> 
+> Suicide: Suicide deaths of domestic violence abusers, in the context of an
+> intimate partner homicide or assault. These include domestic violence
+> murder-suicide and abusers’ suicide deaths following an attempted murder or
+> homicide threats.
+>
+> Police intervention (new category): Abusers killed by law enforcement officers
+> responding to domestic violence assault, homicide threats, or hostage
+> situations. Most incidents are consistent with “suicide by cop,” in which
+> abusers threaten officers or victims with deadly violence to provoke a lethal
+> response. In previous versions of this table, these deaths are included with
+> abuser suicides.
+
+The Domestic Violence Fatality Review also notes that these data are likely
+underestimates, since they do not include cases that are unresolved or
+unreported.
+
+OFM's population estimates are based on the previous census, and while they are
+only estimates they are likely sufficient for these purposes.
+
+## Data cleaning and transformation
+
+The Domestic Violence Fatality Review data is provided in PDF form. I used
 [Tabula](http://tabula.technology/) to convert the
-[data PDF](http://dvfatalityreview.org/2015/12/30/updated-through-6302015-washington-state-domestic-violence-fatalities-by-county/)
-into a CSV. The resulting CSV is still quite messy and required some significant
-data cleaning. The Office of Financial Management publishes yearly county-level
-population estimates which are probably good enough for these purposes.
+[PDF](http://dvfatalityreview.org/2015/12/30/updated-through-6302015-washington-state-domestic-violence-fatalities-by-county/)
+into a CSV. The resulting CSV contained some mangled text and still required
+significant data cleaning.
 
 All of the cleaning and plotting of the data (with the exception of running the
-data PDF through Tabula to get a CSV) was done in R. To reduce clutter and focus
-on the visualizations I've hidden the code chunks, but they can be viewed in
-[the .Rmd file](https://github.com/karawoo/INFX-598J-assignment-2/blob/master/code/dv_vis.Rmd).
+data PDF through Tabula to get a CSV) is done in the code below. Both the
+domestic violence fatality data and the population data were presented in wide
+format, with years as columns. Both had multiple header rows and extraneous
+columns.
 
-```{r dv_data}
+```{r dv_data, echo = TRUE}
 ## First load the required packages
+library("maps")
 library("readxl")
 library("tidyr")
 library("dplyr")
-library("maps")
 library("ggplot2")
 library("viridis")
+library("wesanderson")
 
-## Load data without the header row for now -- we'll add that back in later
+## Load data without the header row (years) for now -- we'll add that back in
+## later
 dv <- read.table(
   "../data/original/tabula-fatalities-by-county-through-6-30-2015.csv",
   sep = ",",
@@ -59,15 +95,21 @@ dv[1, grep("(?=.*s)(?=.*u)(?=.*i)(?=.*c)(?=.*d)(?=.*e)",
 dv[1, grep("(?=.*p)(?=.*o)(?=.*l)(?=.*i)(?=.*c)(?=.*e)",
             dv[1, ], perl = TRUE)] <- "police.intervention"
 
-## Get years from first row of CSV
+## Get year values from first row of CSV. 
 years <- scan(
   "../data/original/tabula-fatalities-by-county-through-6-30-2015.csv",
   nlines = 1, sep = ",", what = character()
 )
 
-## Fill in empty strings. There should be 3 entries for each year. This creates
-## 6 for 2015; the last three are actually columns of totals that are going to
-## be removed anyway
+## This creates a vector of years and empty strings. In the data, year is shown
+## as a merged cell that arches over columns for suicide, homicide, and police
+## intervention columns. In the CSV there is no concept of merged cells, so each
+## year appears once and the other two columns have no year associated with
+## them. We'll fix this in the next step.
+
+## Fill in empty strings. There should be 3 entries for each year. The following
+## creates 6 for 2015; the last three are actually columns of totals that are
+## going to be removed anyway.
 for (i in seq_along(years)) {
   if (i == 1) {
     years[i] <- years[i]
@@ -78,7 +120,7 @@ for (i in seq_along(years)) {
 }
 
 ## Paste together year and fatality type into one column header -- these will be
-## separated later after reshaping
+## separated later after reshaping the data into long format
 newnames <- paste(years, dv[1, ], sep = "_")
 newnames[1] <- "county"
 
@@ -91,7 +133,8 @@ names(dv) <- newnames
 dv <- dv[-c(1, nrow(dv)), -c(ncol(dv), ncol(dv) - 1, ncol(dv) - 2)]
 ```
 
-```{r dv_reshape}
+```{r dv_reshape, echo = TRUE}
+## Now reshape the data into long format and do some final tidying
 dv_long <- dv %>%
   ## Gather into long format
   gather(key = yeartype, value = fatalities, -county) %>%
@@ -103,14 +146,14 @@ dv_long <- dv %>%
   mutate(fatalities = as.numeric(fatalities))
 ```
 
-```{r pop_data}
-## Download OFM data
+```{r pop_data, echo = TRUE}
+## Download population estimate data from OFM
 ## download.file(
 ##   url = "http://www.ofm.wa.gov/pop/april1/hseries/ofm_april1_postcensal_estimates_pop_1960-present.xlsx",
 ##   destfile = "../data/original/postcensal_pop_estimates.xlsx"
 ## )
 
-## Load population estimates
+## Load population estimate data
 pop <- read_excel(
   "../data/original/postcensal_pop_estimates.xlsx",
   sheet = 2, skip = 3
@@ -147,20 +190,65 @@ pop_long <- pop %>%
          year = as.numeric(year))
 ```
 
-```{r merge_data}
+After the data cleaning, I merged the domestic violence fatality data and the
+population data into one data set.
+
+```{r merge_data, echo = TRUE}
 dat <- merge(dv_long, pop_long, by = c("county", "year"))
 ```
 
+```{r data_versions}
+## Here are some alternate versions of the data to be used below
+
+## Total fatalities by county and year
+tot_fat_by_county_year <- dat %>%
+  group_by(county, year) %>%
+  summarize(tot_fatal = sum(fatalities, na.rm = TRUE),
+            pop = unique(pop))
+
+## Total fatalities by year (statewide)
+dat_total <- dat %>%
+  group_by(year) %>%
+  summarize(tot_fatal_state = sum(fatalities, na.rm = TRUE))
+
+## Total fatalities by year and type (statewide)
+tot_fat_by_type <- dat %>%
+  group_by(year, type) %>%
+  summarize(tot_fatal_state = sum(fatalities, na.rm = TRUE))
+```
+
+I've chosen not to include the code for the following visualizations, as it is
+not part of the assignment as stated. However if you're interested, you can view
+it
+[here](https://github.com/karawoo/INFX-598J-assignment-2/blob/master/code/dv_vis.Rmd).
+
 ## Distributions
 
-What is the distribution of fatalities by county in a given year, normalized by
-population?
+My first step is to examine the distribution of fatalities in a given year.
+Since fatalities occur in whole numbers, a bin width of 1 seems a reasonable
+place to start. This histogram will show the number of counties that have 1, 2,
+3, etc. fatalities in each year.
 
-```{r fatality_hist_by_pop}
-dat %>%
-  group_by(county, year) %>%
-  summarize(tot_fatal_pop = sum(fatalities, na.rm = TRUE) / (unique(pop) / 10000)) %>%
-  ggplot(aes(x = tot_fatal_pop)) +
+```{r fatality_hist_by_year, fig.height = 9}
+tot_fat_by_county_year %>%
+  ggplot(aes(x = tot_fatal)) +
+  geom_histogram(binwidth = 1) +
+  facet_wrap(~ year, ncol = 3) +
+  ylab("Count") +
+  xlab("Number of fatalities") +
+  ggtitle("Domestic Violence Fatalities")
+```
+
+However, not all counties have the same number of people, so it is probably not
+appropriate to compare them in this way. Here I am summing all types of
+fatalities (homicides, suicides, and police interventions) and dividing them by
+county population / 10,000 to get the number of fatalities per 10,000
+population. 
+
+```{r fatality_hist_by_year_pop, fig.height = 9}
+tot_fat_by_county_year %>%
+  mutate(tot_fatal = tot_fatal / (pop / 10000)) %>%
+  ggplot(aes(x = tot_fatal)) +
   geom_histogram(binwidth = 0.1) +
   facet_wrap(~ year, ncol = 3) +
   ylab("Count") +
@@ -168,56 +256,68 @@ dat %>%
   ggtitle("Domestic Violence Fatalities")
 ```
 
+The data appears to be heavily right-skewed and may conform to a Poisson
+distribution, which is common for count data.
+
 ## Time series and temporal trends
 
-What, if any, temporal trends are there in total fatalities and the three types
-of fatalities?
+Next I am interested in seeing what, if any, temporal trends are there in total
+fatalities and the three types of fatalities?
 
 ```{r fatalities_line}
-dat_total <- dat %>%
-  group_by(year) %>%
-  summarize(tot_fatal_state = sum(fatalities, na.rm = TRUE))
-
 ggplot(dat_total, aes(x = year, y = tot_fatal_state, group = 1)) +
-  geom_line() +
+  geom_line(size = 3) +
   ylim(0, max(dat_total$tot_fatal_state) + 10) +
   ylab("Fatalities") +
   xlab("Year") +
   ggtitle("Total Domestic Violence Fatalities in Washington State")
 ```
 
+It appears that there is a bit of year-to-year variation, but no clear trend.
+Perhaps the picture looks different if we break the data out by fatality type.
+
 ```{r fatalities_line_by_type}
-dat %>%
-  group_by(year, type) %>%
-  summarize(tot_fatal_state = sum(fatalities, na.rm = TRUE)) %>%
-    ggplot(aes(x = year, y = tot_fatal_state, group = 1)) +
-  geom_line() +
-  facet_wrap(~ type, ncol = 1) +
+tot_fat_by_type %>%
+  ggplot(aes(x = year, y = tot_fatal_state, group = type, color = type)) +
+  geom_line(size = 3) +
+  scale_color_manual(values = wes_palette("FantasticFox")) +
   ylab("Fatalities") +
   xlab("Year") +
   ggtitle("Domestic Violence Fatalities in Washington State by Type")
 ```
 
+Again there do not seem to be any obvious trends. I could maybe be convinced
+that the number of police intervention fatalities is increasing, but it would
+definitely need some follow-up. However, this is useful as it confirms that the
+majority of domestic violence related fatalities are homicides.
+
 If I were planning more confirmatory statistics with this data I'd probably want
-to know about the degree of temporal autocorrelation.
+to know about the degree of temporal autocorrelation, so I'm including a plot of
+the temporal autocorrelation function for total statewide domestic violence
+fatalities.
 
 ```{r autocorrelation_total}
 acf(dat_total$tot_fatal_state, main = "Autocorrelation function for statewide \ntotal domestic violence fatalities")
 ```
 
-Can we see any trends in homicides by county?
+It doesn't look like there's significant temporal autocorrelation.
+
+Next I want to break down the temporal trends by county.
 
 ```{r homicide_line_color}
 ## Line graph of homicides
 dat %>%
   filter(type == "homicide") %>%
   ggplot(aes(x = year, y = fatalities, group = county, color = county)) +
-  geom_line()
+  geom_line() +
+  ylab("Fatalities") +
+  xlab("Year") +
+  ggtitle("Domestic Violence Homicides")
 ```
 
 Okay not that way...how about faceting?
 
-```{r homicide_line_facet, fig.height = 10}
+```{r homicide_line_facet_by_county, fig.height = 10}
 ## Faceted by county
 dat %>%
   filter(type == "homicide") %>%
@@ -227,17 +327,53 @@ dat %>%
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
   ylab("Number of fatalities") +
   xlab("Year") +
-  ggtitle("Domestic Violence Homicide Fatalities")
-
+  ggtitle("Domestic Violence Homicides")
 ```
+
+Faceting is a little better. I'll also look at total fatalities (not just
+homicides).
+
+```{r fatality_line_facet_by_county, fig.height = 10}
+## Faceted by county
+tot_fat_by_county_year %>%
+  ggplot(aes(x = year, y = tot_fatal)) +
+  facet_wrap(~ county, ncol = 5) +
+  geom_line(group = 1) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  ylab("Number of fatalities") +
+  xlab("Year") +
+  ggtitle("Domestic Violence Fatalities")
+```
+
+These look fairly similar. Benton County had a bit of a bump in the mid-2000s
+and a few counties have had pretty variable fatality rates, but the majority
+don't seem to show a dramatic pattern.
+
+I'll also look at population-normalized rates over time:
+
+```{r fatality_line_facet_by_county_pop_norm, fig.height = 10}
+## Faceted by county
+tot_fat_by_county_year %>%
+  mutate(tot_fatal = tot_fatal / (pop / 10000)) %>%
+  ggplot(aes(x = year, y = tot_fatal)) +
+  facet_wrap(~ county, ncol = 5) +
+  geom_line(group = 1) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  ylab("Number of fatalities per 10,000 population") +
+  xlab("Year") +
+  ggtitle("Domestic Violence Fatalities")
+```
+
+This is not incredibly helpful. There are some weird spikes, but they're mostly
+in counties with small populations where a single fatality has a
+disproportionate impact.
 
 ## Maps of fatalities by county
 
-```{r homicide_map_data} 
-## To visualize homicides on a map, we first need to acquire county boundary
-## data from `ggplot2`'s `map_data()` function and merge it with our homicide
-## data.
+For the following visualizations, county boundary data comes from `ggplot2`'s
+`map_data()` function.
 
+```{r fatality_map_data} 
 ## Gather county spatial data
 county_map <- ggplot2::map_data("county") %>%
   filter(region == "washington") %>%
@@ -250,17 +386,16 @@ county_map <- ggplot2::map_data("county") %>%
                      county, perl = TRUE))
 
 ## Merge homicide data with county map
-hom_county <- dat %>%
-  filter(type == "homicide") %>%
+hom_county <- tot_fat_by_county_year %>%
   merge(county_map, by = "county")
 
 ```
 
-```{r homicide_map_total, fig.height = 15}
+```{r fatality_map_total, fig.height = 15}
 ## Map of number of homicides in each county by year
 ggplot(hom_county, aes(x = long, y = lat, group = group)) +
   facet_wrap(~ year, ncol = 3) +
-  geom_polygon(colour = "grey", size = 0.3, aes(fill = fatalities)) +
+  geom_polygon(colour = "grey", size = 0.3, aes(fill = tot_fatal)) +
   scale_fill_viridis(alpha = 1, begin = 0, end = 1, discrete = FALSE,
                      option = "D") +
   theme(axis.text = element_blank(),
@@ -271,18 +406,18 @@ ggplot(hom_county, aes(x = long, y = lat, group = group)) +
         legend.position = "bottom") +
   expand_limits(x = hom_county$long, y = hom_county$lat) +
   coord_map("polyconic") +
-  labs(fill="Number of \nhomicides") +
-  ggtitle("Domestic Violence Homicides")
+  labs(fill="Number of \nfatalities") +
+  ggtitle("Domestic Violence Fatalities")
 ```
 
 Predictably, this basically looks like a population map of Washington. So
 instead let's look at the number of homicides per 10,000 people.
 
-```{r homicide_map_by_pop, fig.height = 15}
+```{r fatality_map_by_pop, fig.height = 15}
 ## Map of number of homicides/population by year
 ggplot(hom_county, aes(x = long, y = lat, group = group)) +
   facet_wrap(~ year, ncol = 3) +
-  geom_polygon(colour = "grey", size = 0.3, aes(fill = fatalities / (pop / 10000))) +
+  geom_polygon(colour = "grey", size = 0.3, aes(fill = tot_fatal / (pop / 10000))) +
   scale_fill_viridis(alpha = 1, begin = 0, end = 1, discrete = FALSE,
                      option = "D") +
   theme(axis.text = element_blank(),
@@ -293,6 +428,6 @@ ggplot(hom_county, aes(x = long, y = lat, group = group)) +
         legend.position = "bottom") +
   expand_limits(x = hom_county$long, y = hom_county$lat) +
   coord_map("polyconic") +
-  labs(fill="Homicides per \n10,000 population") +
-  ggtitle("Domestic Violence Homicides")
+  labs(fill="Fatalities per \n10,000 population") +
+  ggtitle("Domestic Violence Fatalities")
 ```
