@@ -59,9 +59,9 @@ significant data cleaning.
 
 All of the cleaning and plotting of the data (with the exception of running the
 data PDF through Tabula to get a CSV) is done in the code below. Both the
-domestic violence fatality data and the population data were presented in wide
-format, with years as columns. Both had multiple header rows and extraneous
-columns.
+domestic violence fatality data and the population data were originally
+presented in wide format, with years as columns. Both had multiple header rows
+and extraneous columns.
 
 
 ```r
