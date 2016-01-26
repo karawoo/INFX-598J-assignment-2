@@ -32,12 +32,12 @@ police intervention fatalities are defined thus:
 > 
 > Suicide: Suicide deaths of domestic violence abusers, in the context of an
 > intimate partner homicide or assault. These include domestic violence
-> murder-suicide and abusers’ suicide deaths following an attempted murder or
+> murder-suicide and abusers' suicide deaths following an attempted murder or
 > homicide threats.
 >
 > Police intervention (new category): Abusers killed by law enforcement officers
 > responding to domestic violence assault, homicide threats, or hostage
-> situations. Most incidents are consistent with “suicide by cop,” in which
+> situations. Most incidents are consistent with "suicide by cop," in which
 > abusers threaten officers or victims with deadly violence to provoke a lethal
 > response. In previous versions of this table, these deaths are included with
 > abuser suicides.
