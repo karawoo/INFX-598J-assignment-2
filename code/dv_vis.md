@@ -37,16 +37,12 @@ on the visualizations I've hidden the code chunks, but they can be viewed in
 
 
 
-\newpage
-
 ## Distributions
 
 What is the distribution of fatalities by county in a given year, normalized by
 population?
 
 ![plot of chunk fatality_hist_by_pop](../figs/fatality_hist_by_pop-1.png)
-
-\newpage
 
 ## Time series and temporal trends
 
@@ -57,14 +53,10 @@ of fatalities?
 
 ![plot of chunk fatalities_line_by_type](../figs/fatalities_line_by_type-1.png)
 
-\newpage 
-
 If I were planning more confirmatory statistics with this data I'd probably want
 to know about the degree of temporal autocorrelation.
 
 ![plot of chunk autocorrelation_total](../figs/autocorrelation_total-1.png)
-
-\newpage
 
 Can we see any trends in homicides by county?
 
@@ -73,8 +65,6 @@ Can we see any trends in homicides by county?
 Okay not that way...how about faceting?
 
 ![plot of chunk homicide_line_facet](../figs/homicide_line_facet-1.png)
-
-\newpage
 
 ## Maps of fatalities by county
 

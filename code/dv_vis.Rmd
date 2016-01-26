@@ -1,7 +1,7 @@
 # Washington State Domestic Violence Fatalities
 
 ```{r global_options, include=FALSE}
-knitr::opts_chunk$set(fig.width = 9, fig.height = 7, fig.path = "../figs/",
+knitr::opts_chunk$set(fig.width = 10, fig.height = 7, fig.path = "../figs/",
                       warning = FALSE, message = FALSE, echo = FALSE)
 ```
 
@@ -151,14 +151,12 @@ pop_long <- pop %>%
 dat <- merge(dv_long, pop_long, by = c("county", "year"))
 ```
 
-\newpage
-
 ## Distributions
 
 What is the distribution of fatalities by county in a given year, normalized by
 population?
 
-```{r fatality_hist_by_pop, fig.width = 6, fig.height = 8}
+```{r fatality_hist_by_pop}
 dat %>%
   group_by(county, year) %>%
   summarize(tot_fatal_pop = sum(fatalities, na.rm = TRUE) / (unique(pop) / 10000)) %>%
@@ -169,8 +167,6 @@ dat %>%
   xlab("Number of fatalities per 10,000 population") +
   ggtitle("Domestic Violence Fatalities")
 ```
-
-\newpage
 
 ## Time series and temporal trends
 
@@ -202,16 +198,12 @@ dat %>%
   ggtitle("Domestic Violence Fatalities in Washington State by Type")
 ```
 
-\newpage 
-
 If I were planning more confirmatory statistics with this data I'd probably want
 to know about the degree of temporal autocorrelation.
 
 ```{r autocorrelation_total}
 acf(dat_total$tot_fatal_state, main = "Autocorrelation function for statewide \ntotal domestic violence fatalities")
 ```
-
-\newpage
 
 Can we see any trends in homicides by county?
 
@@ -225,7 +217,7 @@ dat %>%
 
 Okay not that way...how about faceting?
 
-```{r homicide_line_facet}
+```{r homicide_line_facet, fig.height = 10}
 ## Faceted by county
 dat %>%
   filter(type == "homicide") %>%
@@ -238,8 +230,6 @@ dat %>%
   ggtitle("Domestic Violence Homicide Fatalities")
 
 ```
-
-\newpage
 
 ## Maps of fatalities by county
 
@@ -266,7 +256,7 @@ hom_county <- dat %>%
 
 ```
 
-```{r homicide_map_total, fig.height = 8.5}
+```{r homicide_map_total, fig.height = 15}
 ## Map of number of homicides in each county by year
 ggplot(hom_county, aes(x = long, y = lat, group = group)) +
   facet_wrap(~ year, ncol = 3) +
@@ -288,7 +278,7 @@ ggplot(hom_county, aes(x = long, y = lat, group = group)) +
 Predictably, this basically looks like a population map of Washington. So
 instead let's look at the number of homicides per 10,000 people.
 
-```{r homicide_map_by_pop, fig.height = 8.5}
+```{r homicide_map_by_pop, fig.height = 15}
 ## Map of number of homicides/population by year
 ggplot(hom_county, aes(x = long, y = lat, group = group)) +
   facet_wrap(~ year, ncol = 3) +
