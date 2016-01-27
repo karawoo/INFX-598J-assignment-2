@@ -1,7 +1,15 @@
-# Washington State Domestic Violence Fatalities
+---
+title: "Washington State Domestic Violence Fatalities"
+output:
+  html_document:
+    fig_width: 10
+    fig_height: 7
+    fig_caption: true
+---
+
 
 ```{r global_options, include=FALSE}
-knitr::opts_chunk$set(fig.width = 10, fig.height = 7, fig.path = "../figs/",
+knitr::opts_chunk$set(fig.path = "../figs/",
                       warning = FALSE, message = FALSE, echo = TRUE)
 ```
 
@@ -505,7 +513,7 @@ graph) give the best combined picture of spatial patterns. The more populous
 counties have had more fatalities, but there are some other counties that have
 higher relative rates.
 
-```{r map_single_sum}
+```{r map_single_sum, fig.cap = "Fig. 1. Total domestic violence homicides, suicides, and fatal police interventions between 1997 and 2014."}
 tot_fat_by_county_year %>%
   group_by(county) %>%
   summarize(sum_fatal = sum(tot_fatal, na.rm = TRUE)) %>%
@@ -526,7 +534,7 @@ tot_fat_by_county_year %>%
   ggtitle("Domestic Violence Fatalities 1997-2014")
 ```
 
-```{r map_single_by_pop}
+```{r map_single_by_pop, fig.cap = "Fig. 2. Domestic violence fatalities per 10,000 population, averaged across 1997 to 2014."}
 tot_fat_by_county_year %>%
   group_by(county) %>%
   mutate(fatal_per_10k = tot_fatal / (pop / 10000)) %>%
