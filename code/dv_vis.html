@@ -349,10 +349,10 @@ dv &lt;- dv[-c(1, nrow(dv)), -c(ncol(dv), ncol(dv) - 1, ncol(dv) - 2)]
 <p>&hellip;and then cleaned up the population data.</p>
 
 <pre><code class="r">## Download population estimate data from OFM
-## download.file(
-##   url = &quot;http://www.ofm.wa.gov/pop/april1/hseries/ofm_april1_postcensal_estimates_pop_1960-present.xlsx&quot;,
-##   destfile = &quot;../data/original/postcensal_pop_estimates.xlsx&quot;
-## )
+download.file(
+  url = &quot;http://www.ofm.wa.gov/pop/april1/hseries/ofm_april1_postcensal_estimates_pop_1960-present.xlsx&quot;,
+  destfile = &quot;../data/original/postcensal_pop_estimates.xlsx&quot;
+)
 
 ## Load population estimate data
 pop &lt;- read_excel(

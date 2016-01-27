@@ -151,10 +151,10 @@ dv_long <- dv %>%
 
 ```r
 ## Download population estimate data from OFM
-## download.file(
-##   url = "http://www.ofm.wa.gov/pop/april1/hseries/ofm_april1_postcensal_estimates_pop_1960-present.xlsx",
-##   destfile = "../data/original/postcensal_pop_estimates.xlsx"
-## )
+download.file(
+  url = "http://www.ofm.wa.gov/pop/april1/hseries/ofm_april1_postcensal_estimates_pop_1960-present.xlsx",
+  destfile = "../data/original/postcensal_pop_estimates.xlsx"
+)
 
 ## Load population estimate data
 pop <- read_excel(
