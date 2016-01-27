@@ -75,8 +75,6 @@ library("dplyr")
 library("scales")
 library("ggplot2")
 library("viridis")
-library("beyonce") ## devtools::install_github("dill/beyonce")
-library("wesanderson")
 
 ## Load data without the header row (years) for now -- we'll add that back in
 ## later
@@ -284,7 +282,7 @@ Perhaps the picture looks different if we break the data out by fatality type.
 tot_fat_by_type %>%
   ggplot(aes(x = year, y = tot_fatal_state, group = type, color = type)) +
   geom_line(size = 3) +
-  scale_color_manual(values = wes_palette("FantasticFox")) +
+  scale_color_viridis(option = "viridis", begin = 0, end = .7, discrete = TRUE) +
   ylab("Fatalities") +
   xlab("Year") +
   ggtitle("Domestic Violence Fatalities in Washington State by Type")
@@ -302,7 +300,7 @@ would look like here.
 tot_fat_by_type %>%
   ggplot(aes(x = year, y = tot_fatal_state, group = type)) +
   geom_area(aes(fill = type), position = "stack") +
-  scale_fill_manual(values = beyonce_palette(6)) +
+  scale_fill_viridis(option = "viridis", begin = 0, end = .7, discrete = TRUE) +
   ylab("Fatalities") +
   xlab("Year") +
   ggtitle("Domestic Violence Fatalities in Washington State")
