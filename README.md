@@ -8,10 +8,4 @@ I am using data from the Washington State Coalition Against Domestic Violence's
 [population data](http://www.ofm.wa.gov/pop/april1/hseries/default.asp) from the
 Office of Financial Management.
 
-View:
-* the
-  [rendered HTML](http://htmlpreview.github.io/?https://github.com/karawoo/INFX-598J-assignment-2/master/code/dv_vis.html)
-  of my report
-* [PDF report](https://github.com/karawoo/INFX-598J-assignment-2/blob/master/code/dv_vis.pdf)
-  (click `Raw` to download)
-
+View the [final report](http://karawoo.com/INFX-598J-assignment-2/code/dv_vis.html).
