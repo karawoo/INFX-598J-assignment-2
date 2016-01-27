@@ -73,6 +73,7 @@ library("dplyr")
 library("scales")
 library("ggplot2")
 library("viridis")
+library("beyonce") ## devtools::install_github("dill/beyonce")
 library("wesanderson")
 
 ## Load data without the header row (years) for now -- we'll add that back in
@@ -307,6 +308,22 @@ Again there do not seem to be any obvious trends. I could maybe be convinced
 that the number of police intervention fatalities is increasing, but it would
 definitely need some follow-up. However, this is useful as it confirms that the
 majority of domestic violence related fatalities are homicides.
+
+I am usually kind of skeptical of stacked area charts, but I am curious what one
+would look like here.
+
+
+```r
+tot_fat_by_type %>%
+  ggplot(aes(x = year, y = tot_fatal_state, group = type)) +
+  geom_area(aes(fill = type), position = "stack") +
+  scale_fill_manual(values = beyonce_palette(6)) +
+  ylab("Fatalities") +
+  xlab("Year") +
+  ggtitle("Domestic Violence Fatalities in Washington State")
+```
+
+![plot of chunk fatalities_stacked_area](../figs/fatalities_stacked_area-1.png)
 
 If I were planning more confirmatory statistics with this data I'd probably want
 to know about the degree of temporal autocorrelation, so I'm including a plot of
