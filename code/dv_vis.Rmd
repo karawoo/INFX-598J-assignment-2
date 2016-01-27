@@ -280,7 +280,7 @@ ggplot(dat_total, aes(x = year, y = tot_fatal_state, group = 1)) +
 It appears that there is a bit of year-to-year variation, but no clear trend.
 Perhaps the picture looks different if we break the data out by fatality type.
 
-```{r fatalities_line_by_type}
+```{r fatalities_line_by_type, fig.height = 6}
 tot_fat_by_type %>%
   ggplot(aes(x = year, y = tot_fatal_state, group = type, color = type)) +
   geom_line(size = 3) +
@@ -298,7 +298,7 @@ majority of domestic violence related fatalities are homicides.
 I am usually kind of skeptical of stacked area charts, but I am curious what one
 would look like here.
 
-```{r fatalities_stacked_area}
+```{r fatalities_stacked_area, fig.height = 6}
 tot_fat_by_type %>%
   ggplot(aes(x = year, y = tot_fatal_state, group = type)) +
   geom_area(aes(fill = type), position = "stack") +
@@ -453,7 +453,7 @@ influenced compared to the high-population counties.
 I can't believe I didn't think of this sooner, but maybe a scatterplot would be
 better.
 
-```{r scatterplot_by_year, fig.height = 15}
+```{r scatterplot_by_year, fig.height = 13}
 ggplot(tot_fat_by_county_year, aes(x = pop, y = tot_fatal)) +
   geom_point() +
   facet_wrap(~ year, ncol = 3) +
@@ -467,7 +467,7 @@ ggplot(tot_fat_by_county_year, aes(x = pop, y = tot_fatal)) +
 This does make a few points stand out. I think a version that labels a couple
 points would be better.
 
-```{r scatterplot_by_year_labeled, fig.height = 15}
+```{r scatterplot_by_year_labeled, fig.height = 13}
 ## Create labels for King and Pierce counties
 lab_king <- data.frame(pop = 1550000, tot_fatal = 15, year = 1997, lab = "King County")
 lab_pierce <- data.frame(pop = 1000000, tot_fatal = 17, year = 2012, lab = "Pierce County")
