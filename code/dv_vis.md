@@ -70,6 +70,7 @@ library("maps")
 library("readxl")
 library("tidyr")
 library("dplyr")
+library("scales")
 library("ggplot2")
 library("viridis")
 library("wesanderson")
@@ -289,3 +290,17 @@ Predictably, this basically looks like a population map of Washington. So
 instead let's look at the number of homicides per 10,000 people.
 
 ![plot of chunk fatality_map_by_pop](../figs/fatality_map_by_pop-1.png)
+
+I'm not really satisfied with this one for the same reason I don't like the
+population-normalized line graphs -- the low-population counties are too easily
+influenced compared to the high-population counties.
+
+I can't believe I didn't think of this sooner, but maybe a scatterplot would be
+better.
+
+![plot of chunk scatterplot_by_year](../figs/scatterplot_by_year-1.png)
+
+This does make a few points stand out. I think a version that labels a couple
+points would be better.
+
+![plot of chunk scatterplot_by_year_labeled](../figs/scatterplot_by_year_labeled-1.png)

@@ -72,6 +72,7 @@ library("maps")
 library("readxl")
 library("tidyr")
 library("dplyr")
+library("scales")
 library("ggplot2")
 library("viridis")
 library("wesanderson")
@@ -430,4 +431,42 @@ ggplot(hom_county, aes(x = long, y = lat, group = group)) +
   coord_map("polyconic") +
   labs(fill="Fatalities per \n10,000 population") +
   ggtitle("Domestic Violence Fatalities")
+```
+
+I'm not really satisfied with this one for the same reason I don't like the
+population-normalized line graphs -- the low-population counties are too easily
+influenced compared to the high-population counties.
+
+I can't believe I didn't think of this sooner, but maybe a scatterplot would be
+better.
+
+```{r scatterplot_by_year, fig.height = 15}
+ggplot(tot_fat_by_county_year, aes(x = pop, y = tot_fatal)) +
+  geom_point() +
+  facet_wrap(~ year, ncol = 3) +
+  scale_x_continuous(labels = comma) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) + 
+  xlab("Population") +
+  ylab("Fatalities") +
+  ggtitle("Domestic Violence Fatalities for Washington Counties")
+```
+
+This does make a few points stand out. I think a version that labels a couple
+points would be better.
+
+```{r scatterplot_by_year_labeled, fig.height = 15}
+## Create labels for King and Pierce counties
+lab_king <- data.frame(pop = 1550000, tot_fatal = 15, year = 1997, lab = "King County")
+lab_pierce <- data.frame(pop = 1000000, tot_fatal = 17, year = 2012, lab = "Pierce County")
+
+ggplot(tot_fat_by_county_year, aes(x = pop, y = tot_fatal)) +
+  geom_point() +
+  facet_wrap(~ year, ncol = 3) +
+  geom_text(data = lab_king, label = "King County") +
+  geom_text(data = lab_pierce, label = "Pierce County") +
+  scale_x_continuous(labels = comma) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) + 
+  xlab("Population") +
+  ylab("Fatalities") +
+  ggtitle("Domestic Violence Fatalities for Washington Counties")
 ```
