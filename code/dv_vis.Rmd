@@ -481,3 +481,73 @@ ggplot(tot_fat_by_county_year, aes(x = pop, y = tot_fatal)) +
   ylab("Fatalities") +
   ggtitle("Domestic Violence Fatalities for Washington Counties")
 ```
+
+## Conclusions
+
+Based on the visualizations above, I don't think that there are major temporal
+trends in domestic violence fatalities in Washington State. The
+[line graph by fatality type](https://raw.githubusercontent.com/karawoo/INFX-598J-assignment-2/gh-pages/figs/fatalities_line_by_type-1.png)
+or the
+[stacked area](https://raw.githubusercontent.com/karawoo/INFX-598J-assignment-2/gh-pages/figs/fatalities_stacked_area-1.png)
+graph show this best, I think. While I'm glad I looked at the county-level time
+series, I don't think they added any additional insight to the question of
+temporal trends.
+
+I was less satisfied with my attempts to examine spatial trends. Maps seem by
+far the most intuitive way to display this information, but I found it difficult
+to determine presentation that was not misleading in some way. Presenting raw
+numbers of fatalities by county basically yields a map of population density,
+but normalizing the data for population causes fatalities in the less populous
+counties to have a disproportionate impact on the presentation. I think the two
+maps below, which show total fatalities by county summed across the time series
+(first graph) and average fatalities per 10,000 population per year (second
+graph) give the best combined picture of spatial patterns. The more populous
+counties have had more fatalities, but there are some other counties that have
+higher relative rates.
+
+```{r map_single_sum}
+tot_fat_by_county_year %>%
+  group_by(county) %>%
+  summarize(sum_fatal = sum(tot_fatal, na.rm = TRUE)) %>%
+  merge(county_map, by = "county") %>%
+  ggplot(aes(x = long, y = lat, group = group)) +
+  geom_polygon(colour = "grey", size = 0.3, aes(fill = sum_fatal)) +
+  scale_fill_viridis(alpha = 1, begin = 0, end = 1, discrete = FALSE,
+                     option = "D") +
+  theme(axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        axis.title = element_blank(),
+        panel.background = element_blank(),
+        panel.grid = element_blank(),
+        legend.position = "bottom") +
+  expand_limits(x = hom_county$long, y = hom_county$lat) +
+  coord_map("polyconic") +
+  labs(fill="Total fatalities\n1997-2014") +
+  ggtitle("Domestic Violence Fatalities 1997-2014")
+```
+
+```{r map_single_by_pop}
+tot_fat_by_county_year %>%
+  group_by(county) %>%
+  mutate(fatal_per_10k = tot_fatal / (pop / 10000)) %>%
+  summarize(mean_fatal_per_10k = mean(fatal_per_10k, na.rm = TRUE)) %>%
+  merge(county_map, by = "county") %>%
+  ggplot(aes(x = long, y = lat, group = group)) +
+  geom_polygon(colour = "grey", size = 0.3, aes(fill = mean_fatal_per_10k)) +
+  scale_fill_viridis(alpha = 1, begin = 0, end = 1, discrete = FALSE,
+                     option = "D") +
+  theme(axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        axis.title = element_blank(),
+        panel.background = element_blank(),
+        panel.grid = element_blank(),
+        legend.position = "bottom") +
+  expand_limits(x = hom_county$long, y = hom_county$lat) +
+  coord_map("polyconic") +
+  labs(fill="Average fatalities per 10,000\npopulation per year") +
+  ggtitle("Domestic Violence Fatalities 1997-2014")
+```
+
+
+
+
