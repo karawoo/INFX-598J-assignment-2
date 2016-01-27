@@ -2,7 +2,7 @@
 
 ```{r global_options, include=FALSE}
 knitr::opts_chunk$set(fig.width = 10, fig.height = 7, fig.path = "../figs/",
-                      warning = FALSE, message = FALSE, echo = FALSE)
+                      warning = FALSE, message = FALSE, echo = TRUE)
 ```
 
 I am interested in understanding trends in domestic violence fatalities in
@@ -66,7 +66,7 @@ domestic violence fatality data and the population data were originally
 presented in wide format, with years as columns. Both had multiple header rows
 and extraneous columns.
 
-```{r dv_data, echo = TRUE}
+```{r dv_data}
 ## First load the required packages
 library("maps")
 library("readxl")
@@ -134,8 +134,9 @@ names(dv) <- newnames
 dv <- dv[-c(1, nrow(dv)), -c(ncol(dv), ncol(dv) - 1, ncol(dv) - 2)]
 ```
 
-```{r dv_reshape, echo = TRUE}
-## Now reshape the data into long format and do some final tidying
+Next I reshaped the wide format data into long format.
+
+```{r dv_reshape}
 dv_long <- dv %>%
   ## Gather into long format
   gather(key = yeartype, value = fatalities, -county) %>%
@@ -147,7 +148,9 @@ dv_long <- dv %>%
   mutate(fatalities = as.numeric(fatalities))
 ```
 
-```{r pop_data, echo = TRUE}
+...and then cleaned up the population data.
+
+```{r pop_data}
 ## Download population estimate data from OFM
 ## download.file(
 ##   url = "http://www.ofm.wa.gov/pop/april1/hseries/ofm_april1_postcensal_estimates_pop_1960-present.xlsx",
@@ -194,13 +197,17 @@ pop_long <- pop %>%
 After the data cleaning, I merged the domestic violence fatality data and the
 population data into one data set.
 
-```{r merge_data, echo = TRUE}
+```{r merge_data}
 dat <- merge(dv_long, pop_long, by = c("county", "year"))
 ```
 
-```{r data_versions}
-## Here are some alternate versions of the data to be used below
+Finally, I created aggregations of the data to be used in the graphs: one data
+set of total fatalities by county and year, one of total fatalities statewide by
+year, and one of statewide fatalities broken out by year and type. Creating
+these separate data frames saves me having to re-do the same aggregations for
+each graph.
 
+```{r data_versions}
 ## Total fatalities by county and year
 tot_fat_by_county_year <- dat %>%
   group_by(county, year) %>%
@@ -217,11 +224,6 @@ tot_fat_by_type <- dat %>%
   group_by(year, type) %>%
   summarize(tot_fatal_state = sum(fatalities, na.rm = TRUE))
 ```
-
-I've chosen not to include the code for the following visualizations, as it is
-not part of the assignment as stated. However if you're interested, you can view
-it
-[here](https://github.com/karawoo/INFX-598J-assignment-2/blob/master/code/dv_vis.Rmd).
 
 ## Distributions
 
@@ -298,7 +300,8 @@ the temporal autocorrelation function for total statewide domestic violence
 fatalities.
 
 ```{r autocorrelation_total}
-acf(dat_total$tot_fatal_state, main = "Autocorrelation function for statewide \ntotal domestic violence fatalities")
+acf(dat_total$tot_fatal_state,
+    main = "Autocorrelation function for statewide \ntotal domestic violence fatalities")
 ```
 
 It doesn't look like there's significant temporal autocorrelation.
@@ -306,7 +309,6 @@ It doesn't look like there's significant temporal autocorrelation.
 Next I want to break down the temporal trends by county.
 
 ```{r homicide_line_color}
-## Line graph of homicides
 dat %>%
   filter(type == "homicide") %>%
   ggplot(aes(x = year, y = fatalities, group = county, color = county)) +
@@ -319,7 +321,6 @@ dat %>%
 Okay not that way...how about faceting?
 
 ```{r homicide_line_facet_by_county, fig.height = 10}
-## Faceted by county
 dat %>%
   filter(type == "homicide") %>%
   ggplot(aes(x = year, y = fatalities)) +
@@ -335,7 +336,6 @@ Faceting is a little better. I'll also look at total fatalities (not just
 homicides).
 
 ```{r fatality_line_facet_by_county, fig.height = 10}
-## Faceted by county
 tot_fat_by_county_year %>%
   ggplot(aes(x = year, y = tot_fatal)) +
   facet_wrap(~ county, ncol = 5) +
@@ -353,7 +353,6 @@ don't seem to show a dramatic pattern.
 I'll also look at population-normalized rates over time:
 
 ```{r fatality_line_facet_by_county_pop_norm, fig.height = 10}
-## Faceted by county
 tot_fat_by_county_year %>%
   mutate(tot_fatal = tot_fatal / (pop / 10000)) %>%
   ggplot(aes(x = year, y = tot_fatal)) +

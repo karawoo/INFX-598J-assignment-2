@@ -132,9 +132,10 @@ names(dv) <- newnames
 dv <- dv[-c(1, nrow(dv)), -c(ncol(dv), ncol(dv) - 1, ncol(dv) - 2)]
 ```
 
+Next I reshaped the wide format data into long format.
+
 
 ```r
-## Now reshape the data into long format and do some final tidying
 dv_long <- dv %>%
   ## Gather into long format
   gather(key = yeartype, value = fatalities, -county) %>%
@@ -145,6 +146,8 @@ dv_long <- dv %>%
   ## Convert fatalities to numeric
   mutate(fatalities = as.numeric(fatalities))
 ```
+
+...and then cleaned up the population data.
 
 
 ```r
@@ -199,12 +202,30 @@ population data into one data set.
 dat <- merge(dv_long, pop_long, by = c("county", "year"))
 ```
 
+Finally, I created aggregations of the data to be used in the graphs: one data
+set of total fatalities by county and year, one of total fatalities statewide by
+year, and one of statewide fatalities broken out by year and type. Creating
+these separate data frames saves me having to re-do the same aggregations for
+each graph.
 
 
-I've chosen not to include the code for the following visualizations, as it is
-not part of the assignment as stated. However if you're interested, you can view
-it
-[here](https://github.com/karawoo/INFX-598J-assignment-2/blob/master/code/dv_vis.Rmd).
+```r
+## Total fatalities by county and year
+tot_fat_by_county_year <- dat %>%
+  group_by(county, year) %>%
+  summarize(tot_fatal = sum(fatalities, na.rm = TRUE),
+            pop = unique(pop))
+
+## Total fatalities by year (statewide)
+dat_total <- dat %>%
+  group_by(year) %>%
+  summarize(tot_fatal_state = sum(fatalities, na.rm = TRUE))
+
+## Total fatalities by year and type (statewide)
+tot_fat_by_type <- dat %>%
+  group_by(year, type) %>%
+  summarize(tot_fatal_state = sum(fatalities, na.rm = TRUE))
+```
 
 ## Distributions
 
@@ -213,6 +234,17 @@ Since fatalities occur in whole numbers, a bin width of 1 seems a reasonable
 place to start. This histogram will show the number of counties that have 1, 2,
 3, etc. fatalities in each year.
 
+
+```r
+tot_fat_by_county_year %>%
+  ggplot(aes(x = tot_fatal)) +
+  geom_histogram(binwidth = 1) +
+  facet_wrap(~ year, ncol = 3) +
+  ylab("Count") +
+  xlab("Number of fatalities") +
+  ggtitle("Domestic Violence Fatalities")
+```
+
 ![plot of chunk fatality_hist_by_year](../figs/fatality_hist_by_year-1.png)
 
 However, not all counties have the same number of people, so it is probably not
@@ -220,6 +252,18 @@ appropriate to compare them in this way. Here I am summing all types of
 fatalities (homicides, suicides, and police interventions) and dividing them by
 county population / 10,000 to get the number of fatalities per 10,000
 population. 
+
+
+```r
+tot_fat_by_county_year %>%
+  mutate(tot_fatal = tot_fatal / (pop / 10000)) %>%
+  ggplot(aes(x = tot_fatal)) +
+  geom_histogram(binwidth = 0.1) +
+  facet_wrap(~ year, ncol = 3) +
+  ylab("Count") +
+  xlab("Number of fatalities per 10,000 population") +
+  ggtitle("Domestic Violence Fatalities")
+```
 
 ![plot of chunk fatality_hist_by_year_pop](../figs/fatality_hist_by_year_pop-1.png)
 
@@ -231,10 +275,31 @@ distribution, which is common for count data.
 Next I am interested in seeing what, if any, temporal trends are there in total
 fatalities and the three types of fatalities?
 
+
+```r
+ggplot(dat_total, aes(x = year, y = tot_fatal_state, group = 1)) +
+  geom_line(size = 3) +
+  ylim(0, max(dat_total$tot_fatal_state) + 10) +
+  ylab("Fatalities") +
+  xlab("Year") +
+  ggtitle("Total Domestic Violence Fatalities in Washington State")
+```
+
 ![plot of chunk fatalities_line](../figs/fatalities_line-1.png)
 
 It appears that there is a bit of year-to-year variation, but no clear trend.
 Perhaps the picture looks different if we break the data out by fatality type.
+
+
+```r
+tot_fat_by_type %>%
+  ggplot(aes(x = year, y = tot_fatal_state, group = type, color = type)) +
+  geom_line(size = 3) +
+  scale_color_manual(values = wes_palette("FantasticFox")) +
+  ylab("Fatalities") +
+  xlab("Year") +
+  ggtitle("Domestic Violence Fatalities in Washington State by Type")
+```
 
 ![plot of chunk fatalities_line_by_type](../figs/fatalities_line_by_type-1.png)
 
@@ -248,20 +313,62 @@ to know about the degree of temporal autocorrelation, so I'm including a plot of
 the temporal autocorrelation function for total statewide domestic violence
 fatalities.
 
+
+```r
+acf(dat_total$tot_fatal_state,
+    main = "Autocorrelation function for statewide \ntotal domestic violence fatalities")
+```
+
 ![plot of chunk autocorrelation_total](../figs/autocorrelation_total-1.png)
 
 It doesn't look like there's significant temporal autocorrelation.
 
 Next I want to break down the temporal trends by county.
 
+
+```r
+dat %>%
+  filter(type == "homicide") %>%
+  ggplot(aes(x = year, y = fatalities, group = county, color = county)) +
+  geom_line() +
+  ylab("Fatalities") +
+  xlab("Year") +
+  ggtitle("Domestic Violence Homicides")
+```
+
 ![plot of chunk homicide_line_color](../figs/homicide_line_color-1.png)
 
 Okay not that way...how about faceting?
+
+
+```r
+dat %>%
+  filter(type == "homicide") %>%
+  ggplot(aes(x = year, y = fatalities)) +
+  facet_wrap(~ county, ncol = 5) +
+  geom_line(group = 1) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  ylab("Number of fatalities") +
+  xlab("Year") +
+  ggtitle("Domestic Violence Homicides")
+```
 
 ![plot of chunk homicide_line_facet_by_county](../figs/homicide_line_facet_by_county-1.png)
 
 Faceting is a little better. I'll also look at total fatalities (not just
 homicides).
+
+
+```r
+tot_fat_by_county_year %>%
+  ggplot(aes(x = year, y = tot_fatal)) +
+  facet_wrap(~ county, ncol = 5) +
+  geom_line(group = 1) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  ylab("Number of fatalities") +
+  xlab("Year") +
+  ggtitle("Domestic Violence Fatalities")
+```
 
 ![plot of chunk fatality_line_facet_by_county](../figs/fatality_line_facet_by_county-1.png)
 
@@ -270,6 +377,19 @@ and a few counties have had pretty variable fatality rates, but the majority
 don't seem to show a dramatic pattern.
 
 I'll also look at population-normalized rates over time:
+
+
+```r
+tot_fat_by_county_year %>%
+  mutate(tot_fatal = tot_fatal / (pop / 10000)) %>%
+  ggplot(aes(x = year, y = tot_fatal)) +
+  facet_wrap(~ county, ncol = 5) +
+  geom_line(group = 1) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  ylab("Number of fatalities per 10,000 population") +
+  xlab("Year") +
+  ggtitle("Domestic Violence Fatalities")
+```
 
 ![plot of chunk fatality_line_facet_by_county_pop_norm](../figs/fatality_line_facet_by_county_pop_norm-1.png)
 
@@ -283,11 +403,67 @@ For the following visualizations, county boundary data comes from `ggplot2`'s
 `map_data()` function.
 
 
+```r
+## Gather county spatial data
+county_map <- ggplot2::map_data("county") %>%
+  filter(region == "washington") %>%
+  ## Rename subregion column to county
+  rename(county = subregion) %>%
+  ## Remove region column (washington)
+  select(-region) %>%
+  ## Capitalize counties
+  mutate(county = gsub("(^|[[:space:]])([[:alpha:]])", "\\1\\U\\2",
+                     county, perl = TRUE))
+
+## Merge homicide data with county map
+hom_county <- tot_fat_by_county_year %>%
+  merge(county_map, by = "county")
+```
+
+
+```r
+## Map of number of homicides in each county by year
+ggplot(hom_county, aes(x = long, y = lat, group = group)) +
+  facet_wrap(~ year, ncol = 3) +
+  geom_polygon(colour = "grey", size = 0.3, aes(fill = tot_fatal)) +
+  scale_fill_viridis(alpha = 1, begin = 0, end = 1, discrete = FALSE,
+                     option = "D") +
+  theme(axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        axis.title = element_blank(),
+        panel.background = element_blank(),
+        panel.grid = element_blank(),
+        legend.position = "bottom") +
+  expand_limits(x = hom_county$long, y = hom_county$lat) +
+  coord_map("polyconic") +
+  labs(fill="Number of \nfatalities") +
+  ggtitle("Domestic Violence Fatalities")
+```
 
 ![plot of chunk fatality_map_total](../figs/fatality_map_total-1.png)
 
 Predictably, this basically looks like a population map of Washington. So
 instead let's look at the number of homicides per 10,000 people.
+
+
+```r
+## Map of number of homicides/population by year
+ggplot(hom_county, aes(x = long, y = lat, group = group)) +
+  facet_wrap(~ year, ncol = 3) +
+  geom_polygon(colour = "grey", size = 0.3, aes(fill = tot_fatal / (pop / 10000))) +
+  scale_fill_viridis(alpha = 1, begin = 0, end = 1, discrete = FALSE,
+                     option = "D") +
+  theme(axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        axis.title = element_blank(),
+        panel.background = element_blank(),
+        panel.grid = element_blank(),
+        legend.position = "bottom") +
+  expand_limits(x = hom_county$long, y = hom_county$lat) +
+  coord_map("polyconic") +
+  labs(fill="Fatalities per \n10,000 population") +
+  ggtitle("Domestic Violence Fatalities")
+```
 
 ![plot of chunk fatality_map_by_pop](../figs/fatality_map_by_pop-1.png)
 
@@ -298,9 +474,39 @@ influenced compared to the high-population counties.
 I can't believe I didn't think of this sooner, but maybe a scatterplot would be
 better.
 
+
+```r
+ggplot(tot_fat_by_county_year, aes(x = pop, y = tot_fatal)) +
+  geom_point() +
+  facet_wrap(~ year, ncol = 3) +
+  scale_x_continuous(labels = comma) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) + 
+  xlab("Population") +
+  ylab("Fatalities") +
+  ggtitle("Domestic Violence Fatalities for Washington Counties")
+```
+
 ![plot of chunk scatterplot_by_year](../figs/scatterplot_by_year-1.png)
 
 This does make a few points stand out. I think a version that labels a couple
 points would be better.
+
+
+```r
+## Create labels for King and Pierce counties
+lab_king <- data.frame(pop = 1550000, tot_fatal = 15, year = 1997, lab = "King County")
+lab_pierce <- data.frame(pop = 1000000, tot_fatal = 17, year = 2012, lab = "Pierce County")
+
+ggplot(tot_fat_by_county_year, aes(x = pop, y = tot_fatal)) +
+  geom_point() +
+  facet_wrap(~ year, ncol = 3) +
+  geom_text(data = lab_king, label = "King County") +
+  geom_text(data = lab_pierce, label = "Pierce County") +
+  scale_x_continuous(labels = comma) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) + 
+  xlab("Population") +
+  ylab("Fatalities") +
+  ggtitle("Domestic Violence Fatalities for Washington Counties")
+```
 
 ![plot of chunk scatterplot_by_year_labeled](../figs/scatterplot_by_year_labeled-1.png)
